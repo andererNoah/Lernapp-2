@@ -1,0 +1,467 @@
+/* =====================================================================
+   STIL: Strategiespiel auf der Leiterplatte.
+   Dunkelgrüne Platine als Grund, helle Pergament-Tafeln mit braunem Rand,
+   dicke Knöpfe mit Kante. Farben mit fester Bedeutung:
+     Grün = los / richtig    Gelb = Strom ausgeben    Türkis = Daten und Forschung
+     Rot = falsch / fällig   Lila = Gegner und Liga
+   ===================================================================== */
+:root{
+  --tinte:#3A2A1C; --tinte-hell:#6E5A45; --grund-oben:#24705A; --grund-unten:#184C3D; --auf-grund:#D8EBDD;
+  --tafel:#F8ECCB; --tafel-hell:#FFF9E6; --linie:#DCCB9C;
+  --gruen:#6CC433; --gruen-kante:#40891B; --gelb:#FFC933; --gelb-kante:#C98A0A; --tuerkis:#35C2B0; --tuerkis-kante:#1E8F81;
+  --blau:#4AA3F2; --rot:#EE5A45; --rot-kante:#B93A29; --orange:#FF8A1F; --lila:#A678F0; --lila-kante:#6F45C4; --holz:#8A5A30; --holz-dunkel:#5E3B1E;
+  --gut-hell:#E2F4CF; --schlecht-hell:#FCDCD3; --schatten:rgba(20,34,24,.45);
+  --titel:"Lilita One","Nunito",system-ui,sans-serif; --schrift:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+/* Grund: Platine mit feinem Lötpunkt-Raster */
+body{margin:0;min-height:100vh;color:var(--tinte);font:700 17px/1.5 var(--schrift);
+  background:radial-gradient(circle at 1px 1px,rgba(255,255,255,.07) 1.5px,transparent 2px) 0 0/26px 26px,linear-gradient(var(--grund-oben),var(--grund-unten)) fixed var(--grund-unten)}
+h1,h2,h3,p,ul,ol,fieldset,legend{margin:0;padding:0}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid #fff;outline-offset:2px;box-shadow:0 0 0 6px var(--tinte)}
+#app{max-width:720px;margin:0 auto;padding:14px 14px 116px}
+body[data-ansicht="runde"] #app{max-width:1000px;padding-bottom:40px}
+body[data-ansicht="ergebnis"] #app{padding-bottom:40px}
+.nurleser{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.leise{color:var(--tinte-hell);font-size:15.5px}
+.klein{font-size:14.5px}
+
+/* Symbole */
+.symbol{display:inline-grid;place-items:center;width:1.25em;height:1.25em;flex:none}
+.symbol svg{width:100%;height:100%;fill:currentColor;stroke:var(--tinte);stroke-width:1.4;stroke-linejoin:round;paint-order:stroke}
+.symbol.gelb{color:var(--gelb)}.symbol.orange{color:var(--orange)}.symbol.blau{color:var(--blau)}.symbol.gruen{color:var(--gruen)}.symbol.tuerkis{color:var(--tuerkis)}
+
+/* Kopfleiste: Rang, Strom, Daten, Sterne, Serie */
+.kopfleiste{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.rang{display:flex;align-items:center;gap:8px;margin-right:auto;padding:4px 14px 4px 4px;border:0;border-radius:999px;background:rgba(12,32,24,.6);color:#fff;cursor:pointer;text-align:left}
+.rangzahl{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--gelb);border:3px solid var(--tinte);color:var(--tinte);font:400 20px var(--titel)}
+.rangtext{display:grid;gap:3px;min-width:86px}
+.rangname{font:400 16px/1 var(--titel);letter-spacing:.02em}
+.xpbalken{display:block;height:8px;border-radius:4px;background:rgba(255,255,255,.25);overflow:hidden}
+.xpbalken i{display:block;height:100%;background:var(--gelb);border-radius:4px;transition:width .5s}
+.pille{display:inline-flex;align-items:center;gap:5px;padding:6px 11px 6px 7px;border-radius:999px;background:rgba(12,32,24,.6);color:#fff;font-weight:800;font-variant-numeric:tabular-nums}
+
+/* Fußleiste: die vier Bereiche, wie ein Holzbrett */
+.fussleiste{position:fixed;left:50%;bottom:0;transform:translateX(-50%);z-index:10;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;width:min(100%,720px);padding:8px 8px calc(8px + env(safe-area-inset-bottom));
+  background:linear-gradient(var(--holz),var(--holz-dunkel));border:3px solid var(--tinte);border-bottom:0;border-radius:18px 18px 0 0;box-shadow:inset 0 3px 0 rgba(255,255,255,.18)}
+.fussleiste button{position:relative;display:grid;justify-items:center;gap:1px;padding:7px 2px 6px;border:0;border-radius:12px;background:transparent;color:#F3DDB8;font:400 13.5px var(--titel);letter-spacing:.02em;cursor:pointer}
+.fussleiste .symbol{width:28px;height:28px}
+.fussleiste .symbol svg{stroke:none}
+.fussleiste button[aria-current]{background:var(--gelb);color:var(--tinte);box-shadow:0 4px 0 var(--gelb-kante),0 0 0 3px var(--tinte);transform:translateY(-5px)}
+.zahlmarke{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:var(--rot);border:2px solid var(--tinte);color:#fff;font:800 13px var(--schrift)}
+.fussleiste .zahlmarke{position:absolute;top:0;right:8%}
+@media (max-width:440px){ .fussleiste{gap:2px;padding-inline:6px} .fussleiste button{padding-inline:0;font-size:11.5px;letter-spacing:0} }
+@media (max-width:379px){ .fussleiste button:not([aria-current]) > span:not(.symbol):not(.zahlmarke){display:none} .fussleiste button:not([aria-current]){padding-block:12px} }
+
+/* Tafeln */
+.seite{margin-top:14px;display:grid;gap:14px}
+.karte{background:var(--tafel);border:3px solid var(--tinte);border-radius:18px;padding:16px 18px;box-shadow:0 5px 0 var(--schatten),inset 0 0 0 3px var(--tafel-hell)}
+.karte h2,.abschnitt,.seitentitel,.fenstertitel{font-family:var(--titel);font-weight:400;letter-spacing:.01em}
+.karte h2{font-size:24px;line-height:1.15}
+.seitentitel{font-size:36px;line-height:1.1;color:#fff;-webkit-text-stroke:5px var(--tinte);paint-order:stroke fill;text-shadow:0 4px 0 var(--tinte)}
+.abschnitt{margin-top:8px;font-size:24px;color:#fff;-webkit-text-stroke:4px var(--tinte);paint-order:stroke fill;text-shadow:0 3px 0 var(--tinte)}
+.einstieg{color:#fff;max-width:62ch}
+.textknopf{background:none;border:0;padding:4px 0;color:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.seite > .leise{color:var(--auf-grund)}
+
+/* Knöpfe mit Kante */
+.knopf{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border:3px solid var(--tinte);border-radius:14px;background:var(--tafel-hell);box-shadow:0 4px 0 var(--tinte);font:400 17px var(--titel);letter-spacing:.02em;cursor:pointer;transition:transform .06s,box-shadow .06s}
+.knopf:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--tinte)}
+.knopf:disabled{background:#E6DCC0;color:#96886B;border-color:#B5A682;box-shadow:0 4px 0 #B5A682;cursor:default}
+.knopf.haupt{background:linear-gradient(#83D848,var(--gruen));color:#fff;text-shadow:0 2px 0 var(--gruen-kante)}
+.knopf.gelb{background:linear-gradient(#FFDD6B,var(--gelb))}
+.knopf.tuerkis{background:linear-gradient(#5FDCCB,var(--tuerkis))}
+.knopf.haupt:disabled,.knopf.gelb:disabled,.knopf.tuerkis:disabled{background:#E6DCC0;text-shadow:none}
+.knopf.klein{padding:6px 12px;font-size:15px;border-radius:12px}
+.knopf.gross{flex:1 1 150px;padding:14px 16px;font-size:19px}
+.knopf.riesig{padding:16px 30px;font-size:24px;border-radius:18px;box-shadow:0 6px 0 var(--tinte)}
+.knopf.gut{background:var(--gruen);color:#fff}
+.knopf.schlecht{background:var(--rot);color:#fff}
+.knopf .symbol svg{stroke:none}
+.aktionen{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.aktionen.mitte{justify-content:center}
+.zweier{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+
+/* Spielfeld mit Himmel und ziehenden Wolken */
+.buehne{position:relative;border:3px solid var(--tinte);border-radius:18px;overflow:hidden;box-shadow:0 5px 0 var(--schatten)}
+.buehne.himmel{background:linear-gradient(#8FD0FF,#DDF3FF 70%)}
+.buehne.nacht{background:radial-gradient(circle at 50% 110%,#8E6BE0,#3A2878 70%)}
+.feld{position:relative;z-index:1;display:block;margin:0 auto;cursor:pointer;touch-action:manipulation}
+.wolke{position:absolute;left:-130px;width:92px;height:26px;border-radius:14px;background:#fff;opacity:.8;animation:ziehen 70s linear infinite}
+.wolke::before{content:"";position:absolute;left:18px;top:-14px;width:44px;height:30px;border-radius:50%;background:#fff}
+.wolke.w1{top:12%}.wolke.w2{top:34%;transform:scale(.7);animation-duration:95s;animation-delay:-40s}.wolke.w3{top:6%;transform:scale(.55);animation-duration:120s;animation-delay:-85s}
+@keyframes ziehen{to{left:105%}}
+.meldung{position:absolute;z-index:2;left:0;right:0;bottom:8px;min-height:26px;text-align:center;font:400 19px var(--titel);color:#fff;-webkit-text-stroke:4px var(--tinte);paint-order:stroke fill;pointer-events:none}
+.szenenknopf{position:absolute;z-index:2;top:8px;right:8px}
+.ruetteln{animation:ruetteln .28s}
+@keyframes ruetteln{25%{transform:translate(-4px,2px)}50%{transform:translate(4px,-2px)}75%{transform:translate(-2px,-1px)}}
+
+/* Dorf: nächster Schritt, Heute-Karte */
+.naechstes{display:flex;align-items:center;justify-content:space-between;gap:14px 20px;flex-wrap:wrap}
+.kartenkopf{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.truhenreihe{display:flex;gap:8px;flex-wrap:wrap}
+.balken{position:relative;display:flex;height:10px;border-radius:5px;background:rgba(58,42,28,.16);overflow:hidden}
+.balken.dick{height:18px;border-radius:9px;border:2px solid var(--tinte);background:var(--tafel-hell);overflow:visible}
+.balken i{display:block;height:100%;background:var(--gruen);transition:width .5s}
+.balken.dick i{border-radius:6px}
+.balken .arbeit{background:var(--gelb)}
+.balken.liga i{background:var(--lila)}
+.balken .marke{position:absolute;top:-5px;bottom:-5px;width:4px;margin-left:-2px;border-radius:2px;background:var(--tinte)}
+.heute .balken.dick{margin-top:10px}
+.heute .balken.dick + .leise{margin-top:4px}
+.auftraege{list-style:none;display:grid;gap:10px;margin-top:14px}
+.auftrag{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding-top:10px;border-top:2px dashed var(--linie)}
+.auftrag .balken{margin:6px 0 2px}
+.auftrag.erledigt{opacity:.55}
+.truhenknopf{display:inline-flex;align-items:center;gap:10px;padding:6px 14px 6px 8px;border:3px solid var(--tinte);border-radius:14px;background:var(--gelb);box-shadow:0 4px 0 var(--gelb-kante);font:400 16px var(--titel);cursor:pointer;animation:wippen 1.6s infinite}
+.truhenknopf:active{transform:translateY(3px);box-shadow:0 1px 0 var(--gelb-kante)}
+.truhenknopf.gross{margin:18px auto 0;padding:10px 20px 10px 12px;font-size:20px}
+@keyframes wippen{0%,100%{transform:rotate(0)}6%{transform:rotate(-3deg)}12%{transform:rotate(3deg)}18%{transform:rotate(0)}}
+
+/* Truhe (nur Formen) */
+.truhe{position:relative;display:inline-block;width:46px;height:38px;flex:none;--t1:#C98A4B;--t2:#8E5A2A}
+.truhe.silber{--t1:#D5DDEA;--t2:#8B98B3}.truhe.gold{--t1:#FFD95A;--t2:#D69A0C}
+.truhe .deckel{position:absolute;left:0;right:0;top:0;height:42%;border:3px solid var(--tinte);border-radius:10px 10px 2px 2px;background:var(--t1);transform-origin:bottom;transition:transform .35s}
+.truhe .kasten{position:absolute;left:0;right:0;bottom:0;height:60%;border:3px solid var(--tinte);border-radius:2px 2px 8px 8px;background:var(--t2)}
+.truhe .riegel{position:absolute;left:50%;top:-6px;width:12px;height:14px;margin-left:-6px;border:3px solid var(--tinte);border-radius:3px;background:var(--gelb)}
+.truhe.offen .deckel{transform:translateY(-10px) rotate(-18deg)}
+.fenster .truhe{width:120px;height:98px;margin:14px auto 6px;display:block}
+.fenster .truhe .riegel{width:26px;height:30px;margin-left:-13px;top:-12px}
+
+/* Listen: Bausteine (als Karten im Raster), Kapitel, offene Aufgaben */
+.liste{list-style:none;display:grid;gap:10px}
+.liste.raster{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+.posten{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 16px;align-items:center;background:var(--tafel);border:3px solid var(--tinte);border-radius:16px;padding:14px 16px;box-shadow:0 4px 0 var(--schatten)}
+.posten.bau{grid-template-columns:auto minmax(0,1fr);gap:8px 12px;padding:12px 14px;align-content:start}
+.posten.bau .postenknoepfe{grid-column:1/-1;justify-content:flex-end}
+.posten.aktiv{background:var(--tafel-hell);box-shadow:0 0 0 3px var(--gelb),0 4px 0 var(--schatten)}
+.posten.neu{background:rgba(248,236,203,.78);border-style:dashed}
+.posten.neu .baubild{opacity:.6}
+.posten.offen{grid-template-columns:1fr;border-left-width:10px;border-left-color:var(--rot)}
+.posten.reihe{grid-template-columns:minmax(0,1fr) auto}
+.posten h3{font:400 19px/1.2 var(--titel);letter-spacing:.01em}
+.posten p{margin-top:3px}
+.posten .balken{margin-top:8px;max-width:340px}
+.stufe{font:800 14.5px var(--schrift);color:var(--tinte-hell)}
+.baubild,.einheitbild{display:block;flex:none}
+.postenknoepfe{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.loesung{font-weight:800}
+.prozent{font:400 24px var(--titel)}
+@media (max-width:520px){ .posten.reihe{grid-template-columns:1fr} }
+
+/* Forschung (Fenster im Labor) */
+.forschung{list-style:none;display:grid;gap:0;margin:10px 0 14px;text-align:left}
+.forschung li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 0;border-top:2px dashed var(--linie)}
+.forschung li > div{display:grid;gap:1px}
+.forschung b{font:400 18px/1.2 var(--titel)}
+.stufenpunkte{display:flex;gap:4px;margin-top:3px}
+.stufenpunkte i{width:18px;height:8px;border-radius:4px;border:2px solid var(--tinte);background:var(--tafel-hell)}
+.stufenpunkte i.an{background:var(--tuerkis)}
+
+/* Weltkarte: eine Platine, Kapitel als Lötpunkte entlang einer Leiterbahn */
+.welt{position:relative;padding:22px 10px 26px;border:3px solid var(--tinte);border-radius:18px;box-shadow:0 5px 0 var(--schatten);
+  background:radial-gradient(circle at 1px 1px,rgba(255,255,255,.1) 1.5px,transparent 2px) 0 0/22px 22px,linear-gradient(#2F8A63,#236B54)}
+.pfad{position:absolute;inset:0;pointer-events:none}
+.pfad polyline{stroke:#FFDD6B;opacity:.85}
+.insel{position:relative;display:grid;justify-items:center;gap:3px;width:150px;margin:0 0 12px clamp(0px,calc(var(--versatz) - 75px),calc(100% - 150px));padding:4px;border:0;border-radius:16px;background:none;color:#fff;cursor:pointer;text-align:center}
+.platte{position:relative;display:grid;place-items:center;width:66px;height:66px;border-radius:50%;border:3px solid var(--tinte);background:#CBB98F;box-shadow:0 5px 0 var(--tinte),inset 0 0 0 6px #EADBB3;color:var(--tinte);font:400 26px var(--titel);transition:transform .06s,box-shadow .06s}
+.insel:active .platte{transform:translateY(4px);box-shadow:0 1px 0 var(--tinte),inset 0 0 0 6px #EADBB3}
+.insel.begonnen .platte{background:var(--gelb);box-shadow:0 5px 0 var(--tinte),inset 0 0 0 6px #FFE698}
+.insel.fertig .platte{background:var(--gruen);box-shadow:0 5px 0 var(--tinte),inset 0 0 0 6px #A6E57C}
+.insel.boss .platte{width:84px;height:84px;border-radius:22px;background:var(--lila);box-shadow:0 5px 0 var(--tinte),inset 0 0 0 6px #CDB4FA;color:#fff}
+.insel.boss.fertig .platte{background:var(--gelb);box-shadow:0 5px 0 var(--tinte),inset 0 0 0 6px #FFE698}
+.insel.boss .symbol{width:40px;height:40px}
+.platte .zahlmarke{position:absolute;top:-8px;right:-8px}
+.inselsterne{display:flex;gap:1px}
+.inselsterne .symbol{width:20px;height:20px}
+.inselsterne .an{color:var(--gelb)}
+.inselsterne .aus{color:rgba(12,32,24,.45)}
+.inselsterne .aus svg{stroke:rgba(12,32,24,.6)}
+.inselname{font:400 15.5px/1.2 var(--titel);letter-spacing:.01em;-webkit-text-stroke:3.5px var(--tinte);paint-order:stroke fill}
+.stufen{display:grid;gap:8px;margin:14px 0 4px}
+.stufenknopf{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 10px;align-items:center;text-align:left;padding:8px 12px;border:3px solid var(--tinte);border-radius:14px;background:var(--tafel-hell);box-shadow:0 4px 0 var(--tinte);font:400 18px var(--titel);cursor:pointer;transition:transform .06s,box-shadow .06s}
+.stufenknopf .symbol{grid-row:span 2;width:32px;height:32px;color:#fff}
+.stufenknopf .abwehrtext{font:700 13.5px/1.3 var(--schrift);color:var(--tinte-hell)}
+.stufenknopf:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--tinte)}
+.stufenknopf.gewonnen{background:#FFEFB0}
+.stufenknopf.gewonnen .symbol{color:var(--gelb)}
+.stufenknopf:disabled{background:#E6DCC0;color:#96886B;border-color:#B5A682;box-shadow:0 4px 0 #B5A682;cursor:default}
+.stufenknopf:disabled .symbol{color:#CFC4A6}
+.stufenknopf:disabled .symbol svg{stroke:#96886B}
+.stufenknopf:disabled .abwehrtext{color:#96886B}
+
+/* Wiederholen */
+.startkarte{display:grid;justify-items:center;gap:12px;text-align:center}
+.themawahl summary,.themablock summary{display:flex;align-items:baseline;justify-content:space-between;gap:12px;cursor:pointer;list-style:none}
+.themawahl summary::-webkit-details-marker,.themablock summary::-webkit-details-marker{display:none}
+.themaname{font:400 20px/1.2 var(--titel)}
+.themaname::before{content:"+";display:inline-block;width:.9em}
+details[open] > summary .themaname::before{content:"–"}
+.themawahl[open] summary{margin-bottom:6px}
+.themablock{margin-bottom:10px}
+.themablock summary{padding:10px 16px;background:var(--tafel);border:3px solid var(--tinte);border-radius:16px;box-shadow:0 4px 0 var(--schatten);font:400 20px var(--titel)}
+.themablock[open] summary{margin-bottom:10px}
+.auswahl{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.auswahlname{min-width:3.6em;color:#fff;font:400 16px var(--titel);letter-spacing:.02em}
+.zugang{display:grid;gap:8px;max-width:420px;margin:12vh auto 0}
+.zugang h1{font:400 34px/1.1 var(--titel)}
+body[data-ansicht="zugang"] #app{padding-bottom:40px}
+.hinweisliste{display:grid;gap:6px;margin:8px 0 8px 1.2em;font-size:15.5px}
+.berichtthema{margin-top:12px}
+.berichtthema h3{font:400 19px var(--titel)}
+body[data-ansicht="bericht"] #app{padding-bottom:40px}
+.haken{clear:both;display:flex;gap:12px;align-items:center;padding:7px 0;cursor:pointer}
+.haken input{width:24px;height:24px;accent-color:var(--gruen-kante);flex:none}
+.haken .zahlmarke{margin-left:auto}
+
+/* Fortschritt */
+.reifekarte{display:grid;gap:8px}
+.riesenzahl{font:400 64px/1 var(--titel)}
+.terminzeile{margin-top:8px}
+.datumsfeld{padding:8px 10px;border:3px solid var(--tinte);border-radius:12px;background:var(--tafel-hell)}
+.abzeichenliste{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.abzeichenliste .abzeichen{display:grid;justify-items:center;gap:2px;padding:14px 10px;text-align:center;border:3px dashed rgba(255,255,255,.5);border-radius:16px;color:var(--auf-grund);font-size:14px;line-height:1.3}
+.abzeichenliste .abzeichen b{font:400 16px var(--titel);color:#fff}
+.abzeichenliste .abzeichen .symbol{width:38px;height:38px;color:rgba(255,255,255,.5)}
+.abzeichenliste .abzeichen .symbol svg{stroke:none}
+.abzeichenliste .abzeichen.hat{background:var(--tafel);border:3px solid var(--tinte);color:var(--tinte-hell);box-shadow:0 4px 0 var(--schatten)}
+.abzeichenliste .abzeichen.hat b{color:var(--tinte)}
+.abzeichenliste .abzeichen.hat .symbol{color:var(--gelb)}
+.abzeichenliste .abzeichen.hat .symbol svg{stroke:var(--tinte)}
+
+/* Charakter und Kleiderschrank */
+.figur{display:block;flex:none}
+.figur svg{display:block;width:100%;height:auto}
+.figur.gross{width:150px;border:3px solid var(--tinte);border-radius:16px;overflow:hidden;background:#BFE4FF;box-shadow:0 4px 0 var(--schatten)}
+.figur.klein{width:44px;height:44px;border:3px solid var(--tinte);border-radius:50%;overflow:hidden;background:var(--tafel-hell)}
+.figurkarte{display:flex;gap:16px;align-items:center}
+.figurtext{display:grid;gap:4px;justify-items:start;min-width:0}
+.figurtext .knopf{margin-top:6px}
+.ladenkopf{display:flex;align-items:center;gap:12px}
+.anprobekarte{position:sticky;top:8px;z-index:5;display:flex;gap:14px;align-items:center;padding:10px 12px}
+.anprobe .figur.gross{width:104px}
+.kaufleiste{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
+.kaufleiste > div{display:grid;min-width:0}
+.kaufleiste b{font:400 19px/1.2 var(--titel)}
+.platzreiter{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 8px;scrollbar-width:thin}
+.platzreiter button{flex:none;padding:7px 14px;border:3px solid var(--tinte);border-radius:999px;background:var(--tafel);font:400 15.5px var(--titel);cursor:pointer}
+.platzreiter button[aria-pressed="true"]{background:var(--gelb)}
+.teile{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px}
+.teil{display:grid;justify-items:center;align-content:start;gap:3px;width:100%;height:100%;padding:6px 5px 8px;border:3px solid var(--tinte);border-radius:14px;background:var(--tafel);box-shadow:0 4px 0 var(--schatten);cursor:pointer;transition:transform .06s,box-shadow .06s}
+.teil:active{transform:translateY(3px);box-shadow:0 1px 0 var(--schatten)}
+.teil .figur{width:100%;border-radius:9px;overflow:hidden;background:#EADDB8}
+.teilname{font:800 12.5px/1.2 var(--schrift);text-align:center}
+.teilpreis{display:inline-flex;gap:3px;align-items:center;font:400 15px var(--titel)}
+.teilpreis .symbol svg{stroke-width:1}
+.teil.selten1 .figur{box-shadow:inset 0 0 0 3px #3F7FE0;background:#DCE8FB}
+.teil.selten2 .figur{box-shadow:inset 0 0 0 3px #8B5CF6;background:#E7DDFD}
+.teil.selten3{background:linear-gradient(#FFF1A8,#F8ECCB 55%)}
+.teil.selten3 .figur{box-shadow:inset 0 0 0 3px #C98A0A;background:#FFE98A}
+.teil.an{background:var(--gelb)}
+.teil.probe{box-shadow:0 0 0 4px var(--tuerkis),0 4px 0 var(--schatten)}
+@media (max-width:420px){ .figur.gross{width:124px} .anprobe .figur.gross{width:88px} }
+
+/* Runde: die Figur neben der Frage */
+.runde{display:grid;gap:12px 24px}
+.rundenseite{display:flex;align-items:center;gap:12px}
+.rundenfigur .figur.gross{width:92px}
+.rundenseite .kampfwerte{margin:0;justify-content:flex-start}
+.figur.froh{animation:huepfen .7s cubic-bezier(.3,1.6,.5,1)}
+.figur.traurig{animation:haengen .6s ease-out forwards}
+@keyframes huepfen{0%{transform:translateY(0) scale(1)}30%{transform:translateY(-16px) scale(1.06) rotate(-3deg)}55%{transform:translateY(0) scale(.98)}75%{transform:translateY(-7px) rotate(2deg)}100%{transform:none}}
+@keyframes haengen{40%{transform:translateY(3px) rotate(-4deg)}100%{transform:translateY(4px) rotate(-2deg);filter:saturate(.6)}}
+.ergebnisseite > .figur.gross{width:120px;margin-bottom:6px}
+@media (min-width:620px){
+  .runde{grid-template-columns:200px minmax(0,1fr);align-items:start}
+  .rundenseite{position:sticky;top:12px;display:grid;justify-items:center}
+  .rundenfigur .figur.gross{width:170px}
+  .rundenseite .kampfwerte{justify-content:center}
+}
+
+/* Spiele-Ecke */
+.figurtext .aktionen{margin-top:6px;gap:8px}
+.bjtisch{display:grid;gap:8px;background:linear-gradient(#2F8A63,#236B54);color:#fff;box-shadow:0 5px 0 var(--schatten),inset 0 0 0 3px rgba(255,255,255,.15)}
+.bjtisch .leise{color:var(--auf-grund)}
+.bjhaende{display:grid;gap:4px}
+.hand{display:flex;gap:6px;flex-wrap:wrap;min-height:66px}
+.spielkarte{display:grid;place-items:center;width:46px;height:64px;border:3px solid var(--tinte);border-radius:8px;background:#fff;color:var(--tinte);font:400 19px var(--titel);box-shadow:0 3px 0 rgba(0,0,0,.3)}
+.spielkarte.rot{color:#D03B2B}
+.spielkarte.verdeckt{background:repeating-linear-gradient(45deg,#3F7FE0 0 6px,#27407A 6px 12px)}
+.bjurteil{font:400 22px var(--titel)}
+.bjurteil.gut{color:#FFE98A}.bjurteil.schlecht{color:#FFC4B8}
+.wettbox{display:grid;gap:12px}
+.wette{display:grid;gap:6px}
+.wettoptionen{list-style:none;display:grid;gap:6px}
+.wettoption{display:flex;align-items:center;gap:8px;padding:8px 10px;border:2px solid var(--linie);border-radius:12px;background:var(--tafel-hell)}
+.wettoption > span:first-child{flex:1;display:grid;min-width:0}
+.wettoption b{font:400 18px/1.2 var(--titel)}
+.wettoption.meine{border-color:var(--tinte)}
+.wettoption.gewinner{background:var(--gut-hell);border-color:var(--gruen-kante)}
+.betrag{flex:0 1 130px}
+.wette label,.wettbox form label{display:grid;gap:4px;font-size:15px}
+
+/* Rangliste */
+.ranginhalt{display:grid;gap:12px}
+.wahlreiter{display:inline-flex;justify-self:start;border:3px solid var(--tinte);border-radius:14px;overflow:hidden;box-shadow:0 4px 0 var(--schatten)}
+.wahlreiter button{padding:8px 16px;border:0;background:var(--tafel);font:400 16px var(--titel);cursor:pointer}
+.wahlreiter button[aria-pressed="true"]{background:var(--gelb)}
+.rangliste{list-style:none;display:grid;gap:8px}
+.rangzeile{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:9px 14px 9px 10px;background:var(--tafel);border:3px solid var(--tinte);border-radius:16px;box-shadow:0 4px 0 var(--schatten)}
+.rangzeile.ich{background:var(--tafel-hell);box-shadow:0 0 0 3px var(--gelb),0 4px 0 var(--schatten)}
+.platz{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:3px solid var(--tinte);background:var(--tafel-hell);font:400 18px var(--titel);font-variant-numeric:tabular-nums}
+.platz1 .platz{background:var(--gelb)}.platz2 .platz{background:#D5DDEA}.platz3 .platz{background:#E0A066}
+.rangwer,.rangwert{display:grid;min-width:0;line-height:1.25}
+.rangwer b{font:400 19px/1.2 var(--titel);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rangwert{justify-items:end;text-align:right}
+.rangwert b{font:400 22px/1.1 var(--titel);font-variant-numeric:tabular-nums}
+.rangluecke{text-align:center;color:#fff;font:400 22px/1 var(--titel)}
+.namensfeld{flex:1 1 180px;min-width:0;padding:9px 14px;border:3px solid var(--tinte);border-radius:14px;background:#fff;font-size:19px;font-weight:800}
+.namenskarte{display:grid;gap:6px}
+.einstieg .textknopf{color:#fff}
+.einstieg .textknopf + .textknopf{margin-left:12px}
+.codefeld{display:block;width:100%;margin-top:12px;padding:8px 10px;border:3px solid var(--tinte);border-radius:12px;background:#fff;font:600 12.5px/1.4 ui-monospace,Menlo,Consolas,monospace;word-break:break-all;resize:vertical}
+.fensterkarte input[type="file"]{display:block;width:100%;margin-top:10px;font-size:14.5px}
+
+/* Kampf */
+.kampfkopf{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.kampftitel{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:400 18px var(--titel);color:#fff;-webkit-text-stroke:3.5px var(--tinte);paint-order:stroke fill}
+.kampf{display:grid;gap:12px 24px}
+.kampfwerte{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:8px}
+.abwehrzeile{margin-top:6px;text-align:center;color:var(--auf-grund);font-size:14px}
+.pille.serie.heiss{background:var(--orange);color:var(--tinte);animation:pochen .7s infinite alternate}
+@keyframes pochen{to{transform:scale(1.08)}}
+.kampftipp{margin:8px auto 0;padding:6px 14px;width:max-content;max-width:100%;border:3px solid var(--tinte);border-radius:999px;background:var(--gelb);font:400 16px var(--titel);text-align:center;animation:pochen .5s infinite alternate}
+.fragebox{min-width:0}
+.marke2{display:inline-block;margin-bottom:8px;padding:2px 12px;border:2px solid var(--tinte);border-radius:999px;background:var(--gelb);font:400 14px var(--titel)}
+.lauftext{padding:26px 0;text-align:center;font:400 24px var(--titel)}
+.wackeln{animation:wackeln .3s}
+@keyframes wackeln{20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.treffer{animation:treffer .3s}
+@keyframes treffer{50%{transform:scale(1.02)}}
+/* Truppenwahl nach einer richtigen Antwort */
+.truppenwahl{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px;margin-top:12px}
+.truppe{display:grid;justify-items:center;gap:0;min-width:0;padding:6px 2px 7px;border:3px solid var(--tinte);border-radius:14px;background:var(--tafel-hell);box-shadow:0 4px 0 var(--tinte);cursor:pointer;line-height:1.2;transition:transform .06s,box-shadow .06s}
+.truppe b{font:400 17px var(--titel)}
+.truppe span{font-size:13px;color:var(--tinte-hell)}
+.truppe[aria-pressed="true"]{background:var(--gelb);box-shadow:0 1px 0 var(--tinte);transform:translateY(3px)}
+.truppe[aria-pressed="true"] span{color:var(--tinte)}
+@media (min-width:620px){
+  .kampf{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);align-items:start}
+  .kampf .seite{position:sticky;top:12px;margin:0;display:block}
+}
+
+/* Aufgaben */
+.frage{hyphens:auto;overflow-wrap:anywhere;font:800 clamp(19px,2.5vw,22px)/1.35 var(--schrift);margin:0;outline:none}
+.frage:focus-visible{box-shadow:none}                       /* Überschrift bekommt den Fokus nur fürs Vorlesen, kein Rahmen */
+.anleitung{margin-top:8px;color:var(--tinte-hell);font-size:15.5px}
+.wahlliste{display:grid;gap:8px;margin-top:14px}
+.wahlzeile{display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px;align-items:center;width:100%;text-align:left;padding:9px 12px;border:3px solid var(--tinte);border-radius:14px;background:var(--tafel-hell);box-shadow:0 3px 0 var(--tinte);line-height:1.35;cursor:pointer;transition:transform .06s,box-shadow .06s}
+.wahlzeile:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--tinte)}
+.wahlzeile:disabled{cursor:default;box-shadow:none;border-color:#B5A682;color:var(--tinte-hell)}
+.marke{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:var(--blau);border:2px solid var(--tinte);color:#fff;font:400 17px var(--titel)}
+.marke.leer{background:transparent;border-style:dashed;border-color:var(--tinte-hell)}
+.wahlzeile.gewaehlt{background:#E4F1FF}
+.wahlzeile.gewaehlt .marke{background:var(--gruen)}
+.wahlzeile.gut{border-color:var(--gruen-kante);background:var(--gut-hell);color:var(--tinte)}
+.wahlzeile.gut .marke{background:var(--gruen)}
+.wahlzeile.schlecht{border-color:var(--rot-kante);background:var(--schlecht-hell);color:var(--tinte)}
+.wahlzeile.schlecht .marke{background:var(--rot)}
+.begriff{margin-top:14px;padding:18px;text-align:center;font:400 24px/1.2 var(--titel);hyphens:auto;overflow-wrap:anywhere;background:var(--gelb);border:3px solid var(--tinte);border-radius:16px}
+.protokoll{list-style:none;margin-top:14px;display:grid;gap:4px;font-size:15.5px}
+.protokoll .gut{color:var(--gruen-kante)}
+.protokoll .schlecht{color:var(--rot-kante)}
+.freitext{display:block;width:100%;margin-top:14px;padding:10px 12px;border:3px solid var(--tinte);border-radius:14px;background:#fff;font-weight:600;resize:vertical}
+
+.lueckentext{margin-top:14px;font-size:19px;line-height:2.4}
+.luecke{display:inline-block;min-width:5.5em;min-height:1.9em;margin:0 3px;padding:0 10px;vertical-align:middle;border:3px dashed var(--tinte-hell);border-radius:10px;background:#fff;font-weight:800;line-height:1.5;cursor:pointer}
+.luecke.voll{border-style:solid;border-color:var(--tinte);background:#E4F1FF}
+.luecke.gut{border:3px solid var(--gruen-kante);background:var(--gut-hell)}
+.luecke.schlecht{border:3px solid var(--rot-kante);background:var(--schlecht-hell)}
+.bank{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{padding:7px 14px;border:3px solid var(--tinte);border-radius:12px;background:var(--gelb);box-shadow:0 3px 0 var(--gelb-kante);font-weight:800;cursor:pointer}
+.chip:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--gelb-kante)}
+.chip:disabled{opacity:.25;cursor:default}
+.schema{display:grid;grid-template-columns:var(--raster);gap:8px;margin-top:14px}
+.zelle{display:grid;place-items:center;min-height:50px;text-align:center;font-size:15px;line-height:1.25;hyphens:auto;overflow-wrap:anywhere}
+.zelle.fest{padding:6px;border:2px solid var(--tinte-hell);border-radius:10px;background:#fff}
+.zelle.pfeil{color:var(--tinte-hell);font-weight:800}
+.schema .luecke{display:block;width:100%;min-width:0;min-height:50px;margin:0;padding:4px;font-size:15px;line-height:1.25;hyphens:auto;overflow-wrap:anywhere}
+
+.antwort{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:16px}
+.antwort .feld{width:170px;max-width:100%;padding:9px 14px;border:3px solid var(--tinte);border-radius:14px;background:#fff;font-size:21px;font-weight:800;font-variant-numeric:tabular-nums}
+.antwort .feld.gut{border-color:var(--gruen-kante);background:var(--gut-hell)}
+.antwort .feld.schlecht{border-color:var(--rot-kante);background:var(--schlecht-hell)}
+.einheit{color:var(--tinte-hell)}
+
+.schalterbank{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;max-width:420px;margin-top:14px;padding:12px 12px 10px;background:var(--tinte);border-radius:14px}
+.spalte{display:grid;justify-items:center;gap:6px}
+.wert{font-size:13px;font-weight:800;color:#D9C7A6}
+.schalter{position:relative;width:100%;max-width:38px;height:64px;padding:0;border:0;border-radius:8px;background:#6B553F;cursor:pointer}
+.schalter .hebel{position:absolute;left:4px;right:4px;bottom:4px;height:26px;border-radius:5px;background:#fff;transition:transform .12s ease-out}
+.schalter[aria-pressed="true"]{background:var(--gruen)}
+.schalter[aria-pressed="true"] .hebel{transform:translateY(-30px)}
+.schalter:disabled{cursor:default}
+.ziffer{font:400 21px var(--titel);color:#fff}
+
+.wahrheit{border-collapse:collapse;margin-top:14px;font:400 20px var(--titel)}
+.wahrheit th,.wahrheit td{padding:7px 18px;text-align:center;border-bottom:2px dashed var(--linie)}
+.wahrheit th{color:var(--tinte-hell)}
+.umschalter{display:inline-flex;border:3px solid var(--tinte);border-radius:12px;overflow:hidden}
+.umschalter button{width:48px;height:38px;border:0;background:#fff;font:400 19px var(--titel);cursor:pointer}
+.umschalter button[aria-pressed="true"]{background:var(--blau);color:#fff}
+.umschalter button:disabled{cursor:default}
+.wahrheit tr.gut .umschalter button[aria-pressed="true"]{background:var(--gruen)}
+.wahrheit tr.schlecht .umschalter{border-color:var(--rot-kante)}
+.wahrheit tr.schlecht .umschalter button[aria-pressed="true"]{background:var(--rot)}
+
+/* Rückmeldung nach einer Antwort */
+.rueck{margin-top:18px;padding:14px 16px 16px;border:3px solid var(--gruen-kante);border-radius:16px;background:var(--gut-hell)}
+.rueck.schlecht{border-color:var(--rot-kante);background:var(--schlecht-hell)}
+.rueck p{margin-top:6px;max-width:62ch}
+.urteil{margin-top:0!important;font:400 24px/1.1 var(--titel);color:var(--gruen-kante)}
+.rueck.schlecht .urteil{color:var(--rot-kante)}
+.zusatz{font-weight:800}
+.rueck .aktionen .knopf{flex:1 1 40%;padding-inline:8px}
+
+/* Ergebnis */
+.ergebnisseite{display:grid;justify-items:center;gap:6px;text-align:center}
+.ergebnisseite > section{justify-self:stretch;text-align:left;margin-top:24px}
+.ergebnisseite section > .leise{color:var(--auf-grund);margin:4px 0 12px}
+.ergebnis{font:400 clamp(44px,11vw,76px)/1 var(--titel);color:var(--gelb);-webkit-text-stroke:8px var(--tinte);paint-order:stroke fill;text-shadow:0 6px 0 var(--tinte);outline:none;animation:reinploppen .5s cubic-bezier(.2,1.6,.4,1)}
+.ergebnis.knapp{color:#fff}
+@keyframes reinploppen{from{transform:scale(.3);opacity:0}}
+.sternreihe{display:flex;gap:6px;margin-top:10px}
+.sternreihe .symbol{width:70px;height:70px}
+.sternreihe .aus{color:rgba(12,32,24,.4)}
+.sternreihe .aus svg{stroke:rgba(12,32,24,.55)}
+.sternreihe .an{color:var(--gelb)}
+.sternreihe .neu{animation:reinploppen .6s .35s cubic-bezier(.2,1.8,.4,1) backwards}
+.zerstoert{width:min(100%,380px);margin-top:10px}
+.zerstoert .leise,.ergebniszeile{color:#fff}
+.zerstoert .leise{margin-top:6px}
+.beute{list-style:none;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+.beute li{display:inline-flex;align-items:center;gap:6px;padding:8px 14px 8px 10px;border:3px solid var(--tinte);border-radius:14px;background:var(--tafel);font-weight:800}
+.beute b{font:400 20px var(--titel)}
+.ergebniszeile{margin-top:12px;max-width:52ch;font-size:18px}
+
+/* Fenster, Feier-Meldungen (unten, damit sie nichts Wichtiges verdecken), Konfetti */
+.fenster{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:16px;background:rgba(10,26,20,.78)}
+.fensterkarte{width:min(100%,400px);max-height:calc(100vh - 32px);overflow:auto;padding:20px;text-align:center;background:var(--tafel);border:4px solid var(--tinte);border-radius:22px;box-shadow:0 8px 0 rgba(10,26,20,.6),inset 0 0 0 3px var(--tafel-hell);animation:reinploppen .3s cubic-bezier(.2,1.5,.4,1)}
+.fensterkarte > .balken{margin:10px 0 4px}
+.fensterkarte .aktionen{justify-content:center}
+.fenstertitel{font-size:28px;line-height:1.15}
+.truheninhalt{min-height:74px;display:grid;align-content:center;justify-items:center;gap:2px;margin-bottom:10px}
+.gewinn{display:inline-flex;align-items:center;gap:6px;font:400 30px var(--titel)}
+.gewinn.klein{font-size:19px}
+.feiern{position:fixed;bottom:108px;left:50%;transform:translateX(-50%);z-index:40;display:grid;gap:8px;width:min(92%,380px);pointer-events:none}
+body[data-ansicht="runde"] .feiern,body[data-ansicht="ergebnis"] .feiern{bottom:16px}
+.feier{display:grid;padding:10px 16px;text-align:center;border:3px solid var(--tinte);border-radius:16px;background:var(--gelb);box-shadow:0 5px 0 rgba(10,26,20,.5);animation:reinploppen .35s cubic-bezier(.2,1.5,.4,1)}
+.feier b{font:400 20px var(--titel)}
+.feier span{font-size:14.5px}
+.feier.serieWeg{background:var(--tafel-hell)}
+.feier.aufstieg{background:var(--gruen);color:#fff}
+.konfetti{position:fixed;inset:0;z-index:50;pointer-events:none}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
