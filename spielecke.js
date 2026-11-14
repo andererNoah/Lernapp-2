@@ -37,7 +37,7 @@ function bjEnde(){
 
 /* ---------- Wetten: Verbindung ---------- */
 const istAdmin = () => !!(RL.admin && G.konto && G.konto.uid === RL.admin);
-const wettPfad = (art, rest) => RL.datenbank.replace(/\/+$/, "") + "/" + art + "/" + encodeURIComponent(RL.kurs || "kurs1") + (rest ? "/" + rest : "") + ".json";
+const wettPfad = (art, rest) => RL.datenbank.replace(/\/+$/, "") + "/" + art + "/" + encodeURIComponent(kursOrt) + (rest ? "/" + rest : "") + ".json";
 const mitAusweis = async url => url + "?auth=" + encodeURIComponent(await kontoAusweis());
 const sende = async (url, methode, daten) => anfrage(await mitAusweis(url), {method:methode, headers:{"Content-Type":"application/json"}, body:daten === undefined ? undefined : JSON.stringify(daten)});
 async function wettenLaden(){ const roh = await anfrage(wettPfad("wetten")) || {}; return Object.keys(roh).map(id => Object.assign({id}, roh[id], {optionen:Object.values(roh[id].optionen || {})})).sort((a, b) => (b.erstellt || 0) - (a.erstellt || 0)); }
@@ -90,7 +90,7 @@ function spielecke(){
       if (!wettBox.isConnected) return;
       wettBox.replaceChildren(...[meldungen.length ? h("section", {class:"karte wettmeldung", role:"status"}, meldungen.map(m => h("p", null, m))) : null,
         wetten.length ? null : h("p", {class:"einstieg"}, "Gerade läuft keine Wette."), ...wetten.map(w => wettKarte(w, summen[w.id])), istAdmin() ? adminKarte() : null,
-        h("p", {class:"einstieg klein"}, "Deine Kennung: " + (G.konto ? G.konto.uid : "noch keine"))].filter(Boolean));
+        h("p", {class:"einstieg klein"}, "Deine Kennung: " + (G.konto ? G.konto.uid : "noch keine"), h("br"), "Speicherort der Liste: " + kursOrt)].filter(Boolean));
     } catch (e) { if (wettBox.isConnected) wettBox.replaceChildren(h("p", {class:"einstieg", role:"status"}, "Die Wetten sind gerade nicht erreichbar. ", h("button", {class:"textknopf", type:"button", onclick:lade}, "Noch einmal versuchen"))); }
   };
   const wettKarte = (w, summe) => {

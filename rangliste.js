@@ -17,7 +17,20 @@
 
 const RL = (typeof KONFIG !== "undefined" && KONFIG.rangliste) || {};          // fehlt konfig.js, bleibt die Rangliste einfach aus
 const ranglisteAn = () => !!(RL.apiKey && RL.datenbank);
-const ranglistePfad = uid => RL.datenbank.replace(/\/+$/, "") + "/rangliste/" + encodeURIComponent(RL.kurs || "kurs1") + (uid ? "/" + uid : "") + ".json";
+/* Speicherort der Liste in der Datenbank.
+   Ist der Lernstoff verschlüsselt, wird der Ort aus dem Kurs-Schlüssel berechnet (kursOrtBestimmen, einmal beim Start).
+   Ohne Kurs-Passwort kennt ihn niemand, und die Firebase-Regeln lassen nur genau diesen Ort zu: Wer nur die Adresse
+   der Datenbank aus konfig.js hat, kann dort weder lesen noch schreiben.
+   Ohne Verschlüsselung ist der Ort einfach der Name aus konfig.js. */
+let kursOrt = RL.kurs || "kurs1";
+async function kursOrtBestimmen(){
+  if (typeof zugangSchluessel === "undefined" || !zugangSchluessel) return;
+  const zusatz = new TextEncoder().encode("|rangliste|" + (RL.kurs || "kurs1")), alles = new Uint8Array(zugangSchluessel.length + zusatz.length);
+  alles.set(zugangSchluessel); alles.set(zusatz, zugangSchluessel.length);
+  const pruefsumme = new Uint8Array(await crypto.subtle.digest("SHA-256", alles));
+  kursOrt = "k" + Array.from(pruefsumme.slice(0, 12), b => b.toString(16).padStart(2, "0")).join("");
+}
+const ranglistePfad = uid => RL.datenbank.replace(/\/+$/, "") + "/rangliste/" + encodeURIComponent(kursOrt) + (uid ? "/" + uid : "") + ".json";
 let kontoToken = null;                                  // Ausweis für Schreibzugriffe, gilt etwa eine Stunde; bleibt nur im Arbeitsspeicher
 
 async function anfrage(url, optionen){

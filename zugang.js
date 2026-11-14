@@ -19,6 +19,7 @@
    ===================================================================== */
 
 const ZUGANG_SPEICHER = "chipdorf-zugang";
+let zugangSchluessel = null;                 // der Kurs-Schlüssel, sobald der Stoff geöffnet ist; daraus berechnet rangliste.js den Speicherort der Liste
 
 async function schluesselAus(passwort, salz, runden){
   const roh = await crypto.subtle.importKey("raw", new TextEncoder().encode(passwort), "PBKDF2", false, ["deriveBits"]);
@@ -32,6 +33,7 @@ async function entschluessle(paket, schluessel){
 async function oeffneMit(schluessel){
   const inhalte = []; for (const paket of LERNSTOFF_GEHEIM) inhalte.push(await entschluessle(paket, schluessel));
   for (const inhalt of inhalte){ AUFBAU.push(...(inhalt.aufbau || [])); LERNSTOFF.push(...(inhalt.lernstoff || [])); }
+  zugangSchluessel = schluessel;
 }
 /* Probiert ein Passwort. Bei Erfolg merkt sich der Browser den Schlüssel. */
 async function versuchePasswort(passwort){
