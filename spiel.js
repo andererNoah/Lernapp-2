@@ -528,7 +528,21 @@ function ergebnisAnsicht(e){
 
 /* Start: Lernstoff entsperren (falls verschlüsselt), prüfen und ordnen, Spielstand laden, dann die Startseite zeigen.
    Mit ?pruefen an der Adresse (oder ganz ohne gültigen Lernstoff) erscheint statt des Spiels die Übersicht aus lernstoff.js. */
+/* Umzug: Die Seite lief früher unter einer netlify.app-Adresse. Wer sie dort noch öffnet, wird zur neuen Adresse geschickt.
+   Das Kurs-Passwort aus dem Link (#k=…) wandert mit, es steht nicht in dieser Datei. */
+const NEUE_ADRESSE = "https://lernapp-2.nosio.workers.dev/";
+function umzugsHinweis(){
+  if (!/(^|\.)netlify\.app$/.test(location.hostname)) return false;
+  document.body.dataset.ansicht = "zugang";
+  app.replaceChildren(h("section", {class:"karte zugang"}, h("h1", null, "Wir sind umgezogen"),
+    h("p", null, "Das Lernspiel hat eine neue Adresse. Hier geht es nicht mehr weiter."),
+    h("p", null, "Dein Spielstand zieht nicht mit um: Auf der neuen Seite fängst du neu an. Speichere dir den neuen Link."),
+    h("div", {class:"aktionen"}, h("a", {class:"knopf haupt", href:NEUE_ADRESSE + location.hash}, "Zur neuen Seite")),
+    h("p", {class:"leise klein"}, NEUE_ADRESSE)));
+  return true;
+}
 async function start(){
+  if (umzugsHinweis()) return;
   await lernstoffOeffnen(); await kursOrtBestimmen();
   bereiteLernstoffAuf();
   try { G = standAus(JSON.parse(localStorage.getItem(SPEICHER) || localStorage.getItem("chipdorf-v3") || "null")) || G; } catch (e) {}
