@@ -494,3 +494,9 @@ select.namensfeld{width:100%;font-size:16px}
 .duellgegen{font:400 14px var(--titel);color:var(--tinte-hell)}
 .duellzahl{text-align:center;font:400 96px/1.4 var(--titel)}
 @media (prefers-reduced-motion:reduce){.duellseite .balken i{transition:none}}
+
+/* ---------- Was ist neu? ---------- */
+.neues{display:grid;gap:14px;margin:12px 0 16px;text-align:left}
+.neues h3{font:400 20px/1.2 var(--titel)}
+.neues ul{margin:6px 0 0;padding-left:20px;display:grid;gap:6px}
+.neues li{overflow-wrap:anywhere}

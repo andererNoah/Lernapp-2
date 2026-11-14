@@ -10,7 +10,7 @@
    AUFBAU           Module und Themen mit Namen und Reihenfolge (aufbau.js)
    LERNSTOFF        je Datei ein Thema mit Kapiteln und Aufgaben
    LERNSTOFF_GEHEIM dasselbe verschlüsselt; wird nach Eingabe des Kurs-Passworts ausgepackt (zugang.js) */
-const AUFBAU = [], LERNSTOFF = [], LERNSTOFF_GEHEIM = [];
+const AUFBAU = [], LERNSTOFF = [], LERNSTOFF_GEHEIM = [], NEUES = [];     // NEUES: Meldungen "Was ist neu?" (neues.js)
 
 /* Bytes als Text verpacken und zurück (für verschlüsselten Lernstoff und den Spielstand-Code). */
 const zuBase64 = bytes => { let s = ""; for (let i = 0; i < bytes.length; i += 8192) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192)); return btoa(s); };

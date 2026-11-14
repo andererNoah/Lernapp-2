@@ -148,7 +148,17 @@ function heim(){
         h("div", {class:"aktionen"}, h("button", {class:"knopf gelb", type:"button", onclick:() => laden()}, "Kleiderschrank"), h("button", {class:"knopf", type:"button", onclick:duellLobby}, "Duell"), h("button", {class:"knopf", type:"button", onclick:spielecke}, "Spiele-Ecke")))),
     h("section", {class:"karte naechstes"}, h("div", null, h("p", {class:"leise"}, "Als Nächstes"), h("h2", null, e.titel), h("p", null, e.text)),
       h("button", {class:"knopf haupt riesig", type:"button", onclick:e.los}, e.knopf)),
-    heuteKarte());
+    heuteKarte(),
+    NEUES.length ? h("p", {class:"einstieg klein"}, h("button", {class:"textknopf", type:"button", onclick:() => neuesFenster(true)}, "Was ist neu?")) : null);
+}
+/* Kleines Fenster mit den Neuerungen. Beim Start nur die noch nicht gesehenen (alles = false), über den Link alle. */
+function neuesFenster(alles){
+  const gesehen = G.neuesGesehen || 0, neueste = NEUES.reduce((n, e) => Math.max(n, e.nr || 0), 0);
+  const liste = NEUES.filter(e => alles || (e.nr || 0) > gesehen).sort((a, b) => (b.nr || 0) - (a.nr || 0)).slice(0, alles ? 20 : 3);
+  if (!liste.length) return;
+  const knopf = h("button", {class:"knopf haupt", type:"button", onclick:() => { G.neuesGesehen = Math.max(gesehen, neueste); sichern(); zu(); }}, "Alles klar");
+  const zu = fenster(h("h2", {class:"fenstertitel"}, "Was ist neu?"), h("div", {class:"neues"}, liste.map(e => h("section", null, h("p", {class:"leise klein"}, e.datum || ""), h("h3", null, e.titel || ""), h("ul", null, (e.punkte || []).map(p => h("li", null, p)))))), knopf);
+  try { knopf.focus({preventScroll:true}); } catch (e) {}
 }
 /* Tagesziel, Truhen und die drei Tagesaufträge. */
 function heuteKarte(){
@@ -338,7 +348,7 @@ function ladenFenster(){
    BEREICH 5: RANGLISTE (gemeinsam mit dem Kurs; die Verbindung steckt in rangliste.js)
    ===================================================================== */
 let ranglisteArt = "chips";
-const RANGARTEN = [["chips", "Chips", e => e.chips, "Chips verdient"], ["quote", "Quote", e => e.gewertet ? e.quote : -1, "richtig"], ["xp", "Erfahrung", e => e.xp, "Erfahrung"]];
+const RANGARTEN = [["chips", "Chips", e => e.chips, "Chips verdient"], ["quote", "Quote", e => e.gewertet ? e.quote : -1, "richtig"], ["xp", "Erfahrung", e => e.xp, "Erfahrung"], ["duell", "Duelle", e => e.siege - e.niederlagen / 100000, "Siege"]];
 function rangliste(){
   beginne("rangliste"); tagPruefen();
   const inhalt = h("div", {class:"ranginhalt"});
@@ -354,10 +364,10 @@ function rangliste(){
     const sortiert = eintraege.slice().sort((a, b) => wert(b) - wert(a) || b.xp - a.xp || a.name.localeCompare(b.name)), ich = sortiert.findIndex(e => e.ich);
     const zeile = (e, i) => h("li", {class:"rangzeile" + (e.ich ? " ich" : "") + (i < 3 ? " platz" + (i + 1) : "")}, h("span", {class:"platz"}, i + 1), figurBild(e.tracht, "kopf", "klein"),
       h("span", {class:"rangwer"}, h("b", null, e.name, e.ich ? " (du)" : ""), h("span", {class:"leise klein"}, zahl(e.richtig + e.falsch) + (e.richtig + e.falsch === 1 ? " Frage: " : " Fragen: ") + zahl(e.richtig) + " richtig, " + zahl(e.falsch) + " falsch")),
-      h("span", {class:"rangwert"}, h("b", null, art === "quote" ? (e.gewertet ? e.quote + " %" : "–") : zahl(wert(e))), h("span", {class:"leise klein"}, art === "quote" && !e.gewertet ? "ab 20 Antworten" : einheit)));
+      h("span", {class:"rangwert"}, h("b", null, art === "quote" ? (e.gewertet ? e.quote + " %" : "–") : art === "duell" ? zahl(e.siege) : zahl(wert(e))), h("span", {class:"leise klein"}, art === "quote" && !e.gewertet ? "ab 20 Antworten" : art === "duell" ? (e.siege === 1 ? "Sieg, " : "Siege, ") + zahl(e.niederlagen) + " verloren" : einheit)));
     const zeilen = sortiert.slice(0, 50).map(zeile); if (ich >= 50) zeilen.push(h("li", {class:"rangluecke", "aria-hidden":"true"}, "…"), zeile(sortiert[ich], ich));
     liste.replaceChildren(...zeilen);
-    stand.textContent = sortiert.length + " Mitspieler. " + {chips:"Gezählt werden alle Chips, die du je verdient hast, samt Gewinnen und Verlusten aus der Spiele-Ecke. Einkaufen kostet keinen Platz.", quote:"Anteil der Antworten, die beim ersten Versuch richtig waren. Gewertet wird ab 20 Antworten.", xp:"Gezählt wird die Erfahrung seit Spielbeginn."}[art];
+    stand.textContent = sortiert.length + " Mitspieler. " + {chips:"Gezählt werden alle Chips, die du je verdient hast, samt Gewinnen und Verlusten aus der Spiele-Ecke. Einkaufen kostet keinen Platz.", quote:"Anteil der Antworten, die beim ersten Versuch richtig waren. Gewertet wird ab 20 Antworten.", xp:"Gezählt wird die Erfahrung seit Spielbeginn.", duell:"Gezählt werden gewonnene Duelle. Bei gleich vielen Siegen steht vorn, wer seltener verloren hat."}[art];
   };
   const lade = async () => {
     stand.textContent = "Lade Rangliste …";
@@ -523,6 +533,6 @@ async function start(){
   bereiteLernstoffAuf();
   try { G = standAus(JSON.parse(localStorage.getItem(SPEICHER) || localStorage.getItem("chipdorf-v3") || "null")) || G; } catch (e) {}
   if (!KAPITEL.length || /[?&]pruefen\b/.test(location.search)){ document.body.dataset.ansicht = "bericht"; app.replaceChildren(lernstoffBericht()); }
-  else { tagPruefen(); sichern(); heim(); }
+  else { tagPruefen(); sichern(); heim(); neuesFenster(false); }
 }
 start();

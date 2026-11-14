@@ -62,9 +62,10 @@ function ranglisteEintrag(stufe){
   if (stufe >= 1) e.fest = l.fest;
   if (stufe >= 2) e.figur = trachtAlsText(G.tracht);
   if (stufe >= 3){ e.chips = Math.max(0, Math.round(G.verdient)); e.richtig = G.zaehler.richtig; e.falsch = G.zaehler.falsch; }
+  if (stufe >= 4){ e.siege = (G.duelle || {}).siege || 0; e.niederlagen = (G.duelle || {}).niederlagen || 0; }
   return e;
 }
-let regelStufe = 3;                                     // sinkt, wenn die Sicherheitsregeln ein Feld ablehnen
+let regelStufe = 4;                                     // sinkt, wenn die Sicherheitsregeln ein Feld ablehnen
 /* Eigenen Eintrag schicken. Macht nichts, solange die Rangliste aus ist oder du keinen Namen gewählt hast. */
 async function ranglisteMelden(){
   if (!ranglisteAn() || !G.name) return false;
@@ -86,7 +87,7 @@ async function ranglisteLaden(){
   const roh = await anfrage(ranglistePfad()) || {};
   return Object.keys(roh).map(uid => { const e = roh[uid] || {};
     const richtig = +e.richtig || 0, falsch = +e.falsch || 0, n = richtig + falsch;
-    return {uid, name:String(e.name || "?").slice(0, 16), chips:+e.chips || 0, richtig, falsch, quote:n ? Math.round(100 * richtig / n) : 0, gewertet:n >= 20, xp:+e.xp || 0, tracht:trachtAusText(e.figur), ich:!!G.konto && uid === G.konto.uid}; });
+    return {uid, name:String(e.name || "?").slice(0, 16), chips:+e.chips || 0, richtig, falsch, quote:n ? Math.round(100 * richtig / n) : 0, gewertet:n >= 20, xp:+e.xp || 0, siege:+e.siege || 0, niederlagen:+e.niederlagen || 0, tracht:trachtAusText(e.figur), ich:!!G.konto && uid === G.konto.uid}; });
 }
 /* Prüft einen Spielernamen. Gibt den bereinigten Namen zurück oder "" bei ungültiger Eingabe. */
 function nameBereinigen(text){ const n = String(text || "").replace(/\s+/g, " ").trim(); return n.length >= 2 && n.length <= 16 ? n : ""; }

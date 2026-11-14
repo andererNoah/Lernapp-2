@@ -32,7 +32,7 @@ async function entschluessle(paket, schluessel){
 /* Öffnet alle Pakete mit einem Schlüssel. Meldet den Stoff erst an, wenn jedes Paket aufging. */
 async function oeffneMit(schluessel){
   const inhalte = []; for (const paket of LERNSTOFF_GEHEIM) inhalte.push(await entschluessle(paket, schluessel));
-  for (const inhalt of inhalte){ AUFBAU.push(...(inhalt.aufbau || [])); LERNSTOFF.push(...(inhalt.lernstoff || [])); }
+  for (const inhalt of inhalte){ AUFBAU.push(...(inhalt.aufbau || [])); LERNSTOFF.push(...(inhalt.lernstoff || [])); NEUES.push(...(inhalt.neues || [])); }
   zugangSchluessel = schluessel;
 }
 /* Probiert ein Passwort. Bei Erfolg merkt sich der Browser den Schlüssel. */
