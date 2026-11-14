@@ -216,22 +216,21 @@ const AUFGABEN = {
       h("div", {class:"schalterbank", role:"group", "aria-label":"Acht Schalter, höchstes Bit links"}, spalten), deins, h("div", {class:"aktionen"}, pruefen));
   },
 
-  /* Erklären: offene Frage wie in der Klausur. Erst selbst antworten, dann die Musterlösung
-     aufdecken und Punkt für Punkt abhaken. Gelöst ab 70 % der Punkte. */
+  /* Erklären: offene Frage wie in der Klausur. Die Antwort wird frei getippt und vom Spiel selbst geprüft:
+     Zu jedem Punkt der Musterlösung sind Stichworte hinterlegt (worte). Kommt eines davon in der Antwort vor,
+     gilt der Punkt als genannt. Gelöst, wenn mindestens die Hälfte der Punkte genannt ist. */
   erklaeren(a, fertig){
-    const feld = h("textarea", {class:"freitext", rows:"4", placeholder:"Deine Antwort in Stichpunkten (wird nicht gespeichert)", "aria-label":"Deine Antwort"});
-    const zeigen = h("button", {class:"knopf haupt", type:"button", onclick:aufdecken}, "Lösung aufdecken");
-    const box = h("div", null, h("p", {class:"anleitung"}, "Antworte erst selbst: Schreib Stichpunkte auf oder sag es laut. Decke dann die Lösung auf."), feld, h("div", {class:"aktionen"}, zeigen));
-    function aufdecken(){
-      zeigen.parentNode.remove(); feld.readOnly = true;
-      const noetig = Math.ceil(a.punkte.length * .7), stand = h("p", {class:"anleitung"});
-      const anzahl = () => haken.filter(k => k.getAttribute("aria-pressed") === "true").length;
-      const male = () => { stand.textContent = anzahl() + " von " + a.punkte.length + " Punkten abgehakt. Gelöst ist die Aufgabe ab " + noetig + "."; };
-      const haken = a.punkte.map(p => { const k = zeile("", p, () => { const an = k.getAttribute("aria-pressed") !== "true"; k.setAttribute("aria-pressed", String(an)); k.feld.textContent = an ? "✓" : ""; k.feld.classList.toggle("leer", !an); k.classList.toggle("gewaehlt", an); male(); });
-        k.setAttribute("aria-pressed", "false"); k.feld.classList.add("leer"); return k; });
-      const ende = h("button", {class:"knopf haupt", type:"button", onclick:() => { const n = anzahl(); haken.forEach(k => k.disabled = true); ende.parentNode.remove(); fertig(n >= noetig); }}, "Fertig");
-      male();
-      box.append(h("p", {class:"anleitung"}, "Das ist die Musterlösung. Hake ehrlich ab, was in deiner Antwort vorkam."), h("div", {class:"wahlliste"}, haken), stand, h("div", {class:"aktionen"}, ende));
+    const noetig = Math.ceil(a.punkte.length / 2);
+    const feld = h("textarea", {class:"freitext", rows:"5", placeholder:"Deine Antwort, Stichpunkte reichen", "aria-label":"Deine Antwort"});
+    const pruefen = h("button", {class:"knopf haupt", type:"button", disabled:true, onclick:werten}, "Prüfen");
+    feld.addEventListener("input", () => { pruefen.disabled = feld.value.trim().length < 3; });
+    const box = h("div", null, h("p", {class:"anleitung"}, "Schreib deine Antwort auf. Geprüft wird, ob die wichtigen Begriffe vorkommen: " + noetig + " von " + a.punkte.length + " Punkten reichen."), feld, h("div", {class:"aktionen"}, pruefen));
+    function werten(){
+      pruefen.parentNode.remove(); feld.readOnly = true;
+      const genannt = punkteGenannt(a, feld.value), treffer = genannt.filter(Boolean).length;
+      box.append(h("p", {class:"anleitung"}, treffer + " von " + a.punkte.length + " Punkten erkannt."),
+        h("ul", {class:"punkteliste"}, a.punkte.map((p, i) => h("li", {class:genannt[i] ? "gut" : "schlecht"}, h("span", {class:"marke", "aria-hidden":"true"}, genannt[i] ? "✓" : "✗"), h("span", null, h("span", {class:"nurleser"}, genannt[i] ? "Erkannt: " : "Fehlt: "), p)))));
+      fertig(treffer >= noetig);
     }
     return box;
   },
@@ -255,6 +254,20 @@ const AUFGABEN = {
       h("table", {class:"wahrheit"}, h("thead", null, h("tr", null, h("th", null, "A"), h("th", null, "B"), h("th", null, "Y"))), h("tbody", null, rumpf)), h("div", {class:"aktionen"}, pruefen));
   }
 };
+
+/* ---------- Stichwort-Prüfung für "erklaeren" ----------
+   worte[i] gehört zu punkte[i]: Alternativen mit | getrennt, "a+b" heißt: beide müssen vorkommen.
+   Groß/klein, Umlaute (ä = ae) und Satzzeichen spielen keine Rolle. Kurze Stichworte (bis 3 Zeichen) zählen nur als ganzes Wort,
+   längere auch als Wortteil ("beispiel" trifft "Beispiele"). Fehlen die Stichworte, werden die langen Wörter des Punktes genommen. */
+function schlicht(text){ return " " + String(text).toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss").replace(/[^a-z0-9µ]+/g, " ").trim() + " "; }
+function stichwortDrin(antwort, wort){ const w = schlicht(wort).trim(); return !!w && antwort.includes(w.length <= 3 ? " " + w + " " : w); }
+function punkteGenannt(a, roh){
+  const antwort = schlicht(roh);
+  return a.punkte.map((punkt, i) => {
+    const worte = a.worte && a.worte[i] ? a.worte[i].split("|") : schlicht(punkt).trim().split(" ").filter(w => w.length >= 6).map(w => w.slice(0, Math.max(5, w.length - 2)));
+    return worte.some(alternative => alternative.split("+").every(teil => stichwortDrin(antwort, teil)));
+  });
+}
 
 function eingabeStimmt(a, roh){
   let s = String(roh).trim().toLowerCase().replace(/\s+/g, "").replace(/[−–]/g, "-");

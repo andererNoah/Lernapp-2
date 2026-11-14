@@ -39,7 +39,7 @@ const AUFGABE_VOLLSTAENDIG = {
   eingabe:     a => typeof a.frage === "string" && (typeof a.zahl === "number" || (Array.isArray(a.text) && a.text.length > 0)),
   schalter:    a => typeof a.frage === "string" && /^[01]{8}$/.test(a.bits || ""),
   tabelle:     a => typeof a.frage === "string" && Array.isArray(a.ausgang) && a.ausgang.length === 4,
-  erklaeren:   a => typeof a.frage === "string" && Array.isArray(a.punkte) && a.punkte.length > 0,
+  erklaeren:   a => typeof a.frage === "string" && Array.isArray(a.punkte) && a.punkte.length > 0 && (a.worte == null || (Array.isArray(a.worte) && a.worte.length === a.punkte.length && a.worte.every(w => typeof w === "string" && w))),
   rechnen:     a => ["dez-dual", "dual-dez", "hex-dez", "dez-hex", "zweier", "zweier-lesen"].includes(a.art)
 };
 const MODULE_ALLE = [], MODULE = [], THEMEN = [], KAPITEL = [], ALLE_AUFGABEN = [];
