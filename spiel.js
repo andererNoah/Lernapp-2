@@ -34,7 +34,7 @@ const ALTE_BAUKOSTEN = {zentrale:[0, 400, 900, 1800, 3200], compiler:[0, 250, 60
 /* ---------- Spielstand (bleibt in diesem Browser) ---------- */
 const SPEICHER = "chipdorf-v4";
 function neuerStand(){
-  return {v:5, chips:REGELN.startChips, tracht:Object.assign({}, START_TRACHT), schrank:{}, sterne:{}, lern:{}, wahl:null, xp:0, tag:null, abzeichen:{}, boss:{}, termine:{}, ton:true, zuletzt:"", name:"", konto:null, verdient:0, wetten:{},
+  return {v:5, chips:REGELN.startChips, tracht:Object.assign({}, START_TRACHT), schrank:{}, sterne:{}, lern:{}, wahl:null, xp:0, tag:null, abzeichen:{}, boss:{}, termine:{}, ton:true, zuletzt:"", name:"", konto:null, verdient:0, wetten:{}, duell:null, duelle:{siege:0, niederlagen:0, remis:0},
     serie:{tage:0, letzter:null, schutz:0, rekord:0}, zaehler:{richtig:0, falsch:0, siege:0, perfekt:0, abwehr:0, boss:0}};
 }
 /* Macht aus gespeicherten Daten einen vollständigen Spielstand (auch aus Vorversionen). Gibt null zurück, wenn die Daten nicht passen. */
@@ -145,7 +145,7 @@ function heim(){
     h("section", {class:"karte figurkarte"}, figurBild(G.tracht, "ganz", "gross"),
       h("div", {class:"figurtext"}, h("p", {class:"leise"}, "Rang " + r.stufe + ", " + r.name), h("h2", null, G.name || "Dein Charakter"),
         h("p", {class:"leise klein"}, n ? n + (n === 1 ? " gekauftes Teil" : " gekaufte Teile") + " im Kleiderschrank" : "Verdiene Chips auf der Karte und kleide deine Figur ein."),
-        h("div", {class:"aktionen"}, h("button", {class:"knopf gelb", type:"button", onclick:() => laden()}, "Kleiderschrank"), h("button", {class:"knopf", type:"button", onclick:spielecke}, "Spiele-Ecke")))),
+        h("div", {class:"aktionen"}, h("button", {class:"knopf gelb", type:"button", onclick:() => laden()}, "Kleiderschrank"), h("button", {class:"knopf", type:"button", onclick:duellLobby}, "Duell"), h("button", {class:"knopf", type:"button", onclick:spielecke}, "Spiele-Ecke")))),
     h("section", {class:"karte naechstes"}, h("div", null, h("p", {class:"leise"}, "Als Nächstes"), h("h2", null, e.titel), h("p", null, e.text)),
       h("button", {class:"knopf haupt riesig", type:"button", onclick:e.los}, e.knopf)),
     heuteKarte());
@@ -519,7 +519,7 @@ function ergebnisAnsicht(e){
 /* Start: Lernstoff entsperren (falls verschlüsselt), prüfen und ordnen, Spielstand laden, dann die Startseite zeigen.
    Mit ?pruefen an der Adresse (oder ganz ohne gültigen Lernstoff) erscheint statt des Spiels die Übersicht aus lernstoff.js. */
 async function start(){
-  await lernstoffOeffnen();
+  await lernstoffOeffnen(); await kursOrtBestimmen();
   bereiteLernstoffAuf();
   try { G = standAus(JSON.parse(localStorage.getItem(SPEICHER) || localStorage.getItem("chipdorf-v3") || "null")) || G; } catch (e) {}
   if (!KAPITEL.length || /[?&]pruefen\b/.test(location.search)){ document.body.dataset.ansicht = "bericht"; app.replaceChildren(lernstoffBericht()); }
