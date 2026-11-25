@@ -221,14 +221,15 @@ function angriffsKarte(){
   const platzhalter = (titel, name) => h("button", {class:"knopf klein", type:"button", disabled:true, "aria-label":name + ", " + titel}, titel);
   const zeile = (name, knoepfe) => h("div", {class:"auswahl", role:"group", "aria-label":name}, h("span", {class:"auswahlname"}, name), knoepfe);
   const wahl = [zeile("Modul", MODULE_ALLE.map((m, i) => m.themen.length ? knopf(m.titel, m === thema.modul, m.themen[0]) : platzhalter(m.titel, "Modul " + (i + 1)))),
-    zeile("Thema", [thema.modul.themen.map(t => knopf(t.titel, t === thema, t)), thema.modul.folgt.map(t => platzhalter(t.titel, "Weiteres Thema"))])];
+    zeile("Thema", [thema.modul.themen.map(t => knopf(t.titel, t === thema, t)), thema.modul.folgt.map(t => platzhalter(t.titel, "Weiteres Thema")),
+      hochladenAn() ? h("button", {class:"knopf klein", type:"button", onclick:hochladenAnsicht}, "+ Eigenes Thema") : null])];
   const inseln = thema.kapitel.map((k, i) => { const st = G.sterne[k.id] || 0, f = k.aufgaben.filter(istFaellig).length;
     return h("button", {class:"insel" + (st >= 3 ? " fertig" : st ? " begonnen" : ""), type:"button", style:"--versatz:" + VERSATZ[i % 8] + "%", onclick:() => kapitelFenster(k)},
       h("span", {class:"platte"}, i + 1, f ? h("span", {class:"zahlmarke"}, f) : null), sternchen(st), h("span", {class:"inselname"}, k.titel)); });
   const bossOffen = thema.kapitel.every(k => (G.sterne[k.id] || 0) >= 1), besiegt = G.boss[thema.id] === wocheNr();
   inseln.push(h("button", {class:"insel boss" + (besiegt ? " fertig" : ""), type:"button", style:"--versatz:" + VERSATZ[thema.kapitel.length % 8] + "%", onclick:() => bossFenster(thema, bossOffen)},
     h("span", {class:"platte"}, bossOffen ? symbol("pokal") : symbol("schloss")), h("span", {class:"inselname"}, "Klausur-Boss")));
-  rahmen("angriff", h("h1", {class:"seitentitel"}, "Weltkarte"), wahl, h("p", {class:"einstieg"}, thema.titel + ": Tippe ein Kapitel an."),
+  rahmen("angriff", h("h1", {class:"seitentitel"}, "Weltkarte"), wahl, hochgeladenZeile(thema), h("p", {class:"einstieg"}, thema.titel + ": Tippe ein Kapitel an."),
     h("div", {class:"welt"}, h("div", {class:"pfad", "aria-hidden":"true"}), inseln));
   zeichnePfad();
 }
@@ -543,7 +544,7 @@ function umzugsHinweis(){
 }
 async function start(){
   if (umzugsHinweis()) return;
-  await lernstoffOeffnen(); await kursOrtBestimmen();
+  await lernstoffOeffnen(); await kursOrtBestimmen(); await hochgeladeneLaden();          // hochladen.js: eigene Themen des Kurses
   bereiteLernstoffAuf();
   try { G = standAus(JSON.parse(localStorage.getItem(SPEICHER) || localStorage.getItem("chipdorf-v3") || "null")) || G; } catch (e) {}
   if (!KAPITEL.length || /[?&]pruefen\b/.test(location.search)){ document.body.dataset.ansicht = "bericht"; app.replaceChildren(lernstoffBericht()); }

@@ -24,7 +24,7 @@ let D = null;                                            // das laufende Duell d
 const duellTauglich = a => a.typ !== "erklaeren" && a.typ !== "rechnen";
 function duellBereiche(){                                // wählbar: jedes Thema ganz oder ein einzelnes Kapitel
   const liste = [];
-  for (const t of THEMEN){ liste.push({id:t.id, titel:t.titel + " (alles)", aufgaben:t.kapitel.flatMap(k => k.aufgaben)}); for (const k of t.kapitel) liste.push({id:k.id, titel:t.titel + ": " + k.titel, aufgaben:k.aufgaben}); }
+  for (const t of THEMEN.filter(t => !t.hochgeladen)){ liste.push({id:t.id, titel:t.titel + " (alles)", aufgaben:t.kapitel.flatMap(k => k.aufgaben)}); for (const k of t.kapitel) liste.push({id:k.id, titel:t.titel + ": " + k.titel, aufgaben:k.aufgaben}); }
   return liste.map(b => Object.assign(b, {aufgaben:b.aufgaben.filter(duellTauglich)})).filter(b => b.aufgaben.length >= DUELL.fragen);
 }
 const duellAufgaben = kennungen => (kennungen || []).map(id => ALLE_AUFGABEN.find(a => a.id === id)).filter(Boolean);
