@@ -276,8 +276,9 @@ function eingabeStimmt(a, roh){
     if (!/^-?\d+(\.\d+)?$/.test(s)) return false;
     return Math.abs(parseFloat(s) - a.zahl) <= (a.toleranz || 0) + 1e-9;
   }
-  s = s.replace(/^0x/, "").replace(/h$/, "");
-  return a.text.some(t => t.toLowerCase().replace(/\s+/g, "") === s);   // Leerzeichen zählen nicht
+  const ohneHex = x => x.replace(/^0x/, "").replace(/h$/, "");          // „0x“ und „h“ für Hexadezimal sind erlaubt, aber nicht nötig
+  const hex = x => /^(0x)?[0-9a-f]+$/.test(x);                          // nur Lösungen, die eine Hex-Zahl sind (z. B. „C8“), bekommen die Sonderregel
+  return a.text.some(t => { const soll = t.toLowerCase().replace(/\s+/g, ""); return soll === s || (hex(soll) && ohneHex(soll) === ohneHex(s)); });   // Leerzeichen zählen nicht
 }
 
 /* Rechenaufgaben werden bei jedem Aufruf mit neuen Zahlen erzeugt. ------- */
